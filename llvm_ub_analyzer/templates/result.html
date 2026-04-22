@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LLVM UB Analyzer - Results</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --panel: #ffffff;
+      --text: #111827;
+      --muted: #6b7280;
+      --border: #d1d5db;
+      --head-bg: #e5e7eb;
+      --add-bg: #ecfdf3;
+      --add-text: #166534;
+      --del-bg: #fef2f2;
+      --del-text: #991b1b;
+      --meta-bg: #eff6ff;
+      --meta-text: #1d4ed8;
+      --accent: #0f766e;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #f8fafc 0%, var(--bg) 100%);
+      color: var(--text);
+      padding: 20px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.55rem;
+    }
+
+    .back-link {
+      text-decoration: none;
+      color: #fff;
+      background: var(--accent);
+      border-radius: 8px;
+      padding: 9px 13px;
+      font-weight: 600;
+    }
+
+    .grid {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    @media (max-width: 980px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 8px 20px rgba(17, 24, 39, 0.05);
+    }
+
+    .panel h2 {
+      margin: 0;
+      background: var(--head-bg);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 12px;
+      font-size: 1rem;
+    }
+
+    pre {
+      margin: 0;
+      padding: 12px;
+      max-height: 360px;
+      overflow: auto;
+      font-family: "Consolas", "Menlo", "Monaco", monospace;
+      font-size: 0.86rem;
+      line-height: 1.45;
+      white-space: pre;
+      background: #fff;
+    }
+
+    .full-width {
+      grid-column: 1 / -1;
+    }
+
+    .explanation {
+      white-space: pre-wrap;
+      line-height: 1.5;
+      font-size: 0.95rem;
+    }
+
+    .diff-add {
+      display: block;
+      background: var(--add-bg);
+      color: var(--add-text);
+    }
+
+    .diff-del {
+      display: block;
+      background: var(--del-bg);
+      color: var(--del-text);
+    }
+
+    .diff-meta {
+      display: block;
+      background: var(--meta-bg);
+      color: var(--meta-text);
+      font-weight: 600;
+    }
+
+    .note {
+      color: var(--muted);
+      margin: 0 0 12px;
+      font-size: 0.92rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <h1>LLVM UB Analyzer Results</h1>
+    <a class="back-link" href="/">Analyze another file</a>
+  </div>
+
+  <p class="note">The compiler assumes undefined behavior does not occur. Differences below may reflect those assumptions.</p>
+
+  <section class="grid">
+    <article class="panel">
+      <h2>O0 IR</h2>
+      <pre>{{ o0_ir }}</pre>
+    </article>
+
+    <article class="panel">
+      <h2>O2 IR</h2>
+      <pre>{{ o2_ir }}</pre>
+    </article>
+
+    <article class="panel full-width">
+      <h2>Diff (O0 -> O2)</h2>
+      <pre>{{ diff_html | safe }}</pre>
+    </article>
+
+    <article class="panel full-width">
+      <h2>Explanation</h2>
+      <pre class="explanation">{{ explanation }}</pre>
+    </article>
+  </section>
+</body>
+</html>
