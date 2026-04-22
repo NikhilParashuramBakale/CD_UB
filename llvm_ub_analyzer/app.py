@@ -60,17 +60,17 @@ def explain_ir_changes(o0_ir: str, o2_ir: str, diff_text: str) -> str:
     o0_lines = o0_ir.splitlines()
     o2_lines = o2_ir.splitlines()
 
-    arith_ops = r"\\b(add|sub|mul|sdiv|udiv|srem|urem)\\b"
+    arith_ops = r"\b(add|sub|mul|sdiv|udiv|srem|urem)\b"
     o0_arith_count = sum(1 for line in o0_lines if re.search(arith_ops, line))
     o2_arith_count = sum(1 for line in o2_lines if re.search(arith_ops, line))
 
-    if o2_arith_count < o0_arith_count and re.search(r"ret\\s+\\w+\\s+[-]?\\d+", o2_ir):
+    if o2_arith_count < o0_arith_count and re.search(r"ret\s+\w+\s+[-]?\d+", o2_ir):
         optimization_notes.append(
             "Constant folding: arithmetic appears reduced in O2, and a direct constant return/value is present."
         )
 
-    o0_load_store = sum(1 for line in o0_lines if re.search(r"\\b(load|store)\\b", line))
-    o2_load_store = sum(1 for line in o2_lines if re.search(r"\\b(load|store)\\b", line))
+    o0_load_store = sum(1 for line in o0_lines if re.search(r"\b(load|store)\b", line))
+    o2_load_store = sum(1 for line in o2_lines if re.search(r"\b(load|store)\b", line))
     if o2_load_store < o0_load_store:
         optimization_notes.append(
             "Memory-to-register promotion / simplification: fewer load/store operations appear in O2."
@@ -146,6 +146,70 @@ def format_diff_html(diff_text: str) -> str:
     return "\n".join(escaped)
 
 
+def simplify_ir(ir_text: str) -> str:
+    """Return IR with noisy metadata removed and inline instruction hints."""
+    skip_prefixes = (
+        "; ModuleID",
+        "source_filename",
+        "target datalayout",
+        "target triple",
+        "attributes #",
+        "!llvm.",
+        "!",
+    )
+
+    simplified_lines: list[str] = []
+    for raw_line in ir_text.splitlines():
+        stripped = raw_line.strip()
+        if not stripped:
+            continue
+        if stripped.startswith(skip_prefixes):
+            continue
+
+        note = ""
+
+        fn_def_match = re.search(r"define\s+.*@([A-Za-z0-9_$.]+)\(", stripped)
+        if fn_def_match:
+            note = f"Function definition: {fn_def_match.group(1)}"
+
+        fn_decl_match = re.search(r"declare\s+.*@([A-Za-z0-9_$.]+)\(", stripped)
+        if fn_decl_match:
+            note = f"External function declaration: {fn_decl_match.group(1)}"
+
+        if re.search(r"%=|%[0-9A-Za-z_.]+\s*=\s*alloca\b", stripped):
+            if "alloca" in stripped:
+                note = "Allocates stack memory for a local variable"
+        elif re.search(r"\bstore\b", stripped):
+            note = "Writes a value into memory"
+        elif re.search(r"\bload\b", stripped):
+            note = "Reads a value from memory"
+        elif re.search(r"\b(add|sub|mul)\s+nsw\b", stripped):
+            note = "Arithmetic with signed no-wrap assumption (signed overflow is UB)"
+        elif re.search(r"\b(add|sub|mul)\b", stripped):
+            note = "Integer arithmetic instruction"
+        elif re.search(r"\b(udiv|sdiv|urem|srem)\b", stripped):
+            note = "Division or remainder instruction"
+        elif re.search(r"\bicmp\b", stripped):
+            note = "Integer comparison producing true/false"
+        elif re.search(r"\bbr\s+i1\b", stripped):
+            note = "Conditional branch"
+        elif re.search(r"\bbr\s+label\b", stripped):
+            note = "Unconditional jump"
+        elif re.search(r"\bcall\b", stripped):
+            note = "Function call"
+        elif re.search(r"\bret\b", stripped):
+            note = "Returns from the function"
+        elif stripped.endswith(":"):
+            note = "Basic block label"
+
+        if note:
+            simplified_lines.append(f"{raw_line}    ; {note}")
+        else:
+            simplified_lines.append(raw_line)
+
+    return "\n".join(simplified_lines)
+
+
 @app.route("/", methods=["GET"])
 def index():
     return render_template("index.html")
@@ -169,6 +233,8 @@ def analyze():
             diff_text = generate_diff(o0_ir, o2_ir)
             explanation = explain_ir_changes(o0_ir, o2_ir, diff_text)
             diff_html = format_diff_html(diff_text)
+            o0_readable = simplify_ir(o0_ir)
+            o2_readable = simplify_ir(o2_ir)
         except RuntimeError as exc:
             return render_template("index.html", error=str(exc))
 
@@ -179,6 +245,8 @@ def analyze():
         diff_text=diff_text,
         diff_html=diff_html,
         explanation=explanation,
+        o0_readable=o0_readable,
+        o2_readable=o2_readable,
     )
 
 

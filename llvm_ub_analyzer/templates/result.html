@@ -138,6 +138,8 @@
 
   <p class="note">The compiler assumes undefined behavior does not occur. Differences below may reflect those assumptions.</p>
 
+  <p class="note">Readable IR hides low-level metadata and adds inline hints after each instruction to make the flow easier to follow.</p>
+
   <section class="grid">
     <article class="panel">
       <h2>O0 IR</h2>
@@ -147,6 +149,16 @@
     <article class="panel">
       <h2>O2 IR</h2>
       <pre>{{ o2_ir }}</pre>
+    </article>
+
+    <article class="panel">
+      <h2>Readable O0 IR</h2>
+      <pre>{{ o0_readable }}</pre>
+    </article>
+
+    <article class="panel">
+      <h2>Readable O2 IR</h2>
+      <pre>{{ o2_readable }}</pre>
     </article>
 
     <article class="panel full-width">
